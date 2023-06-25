@@ -1,0 +1,54 @@
+name: metadata-parser CI
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+env:
+  CONFIG_FILE_PATH: ./conf/conf.env
+  BASE_URL: https://api.aiven.io
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - name: python_setup
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.7'
+
+    - name: install_dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # create a temporary config file to test main.py
+    - name: set_config
+      run: |
+        cat <<EOF > ${{env.CONFIG_FILE_PATH}}
+        #!/bin/bash
+        PROJECT=${{ vars.PROJECT }}
+        TOKEN=${{ secrets.TOKEN }}
+        BASE_URL=${{ env.BASE_URL }}
+        EOF
+
+    - name: run_main
+      run: |
+        echo "python main.py && echo 'DONE' || echo 'FAIL'"
+
+    - name: check_created_files
+      run: |
+        file_name="graph_data.dot"
+        echo "[[ -f ./${file_name} ]] && echo ${file_name} created - DONE' || echo '${file_name} not created - FAIL'"
+        file_name="graph_data.gml"
+        echo "[[ -f ./${file_name} ]] && echo ${file_name} created - DONE' || echo '${file_name} not created - FAIL'"
+        file_name="nx.html"
+        echo "[[ -f ./${file_name} ]] && echo ${file_name} created - DONE' || echo '${file_name} not created - FAIL'"
